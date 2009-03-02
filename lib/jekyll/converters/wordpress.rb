@@ -12,24 +12,25 @@ module Jekyll
   module WordPress
 
     # Reads a MySQL database via Sequel and creates a post file for each
-    # post in wp_posts that has post_status = 'publish'.
+    # post in "table" that has post_status = 'publish'.
     # This restriction is made because 'draft' posts are not guaranteed to
     # have valid dates.
-    QUERY = "select * from wp_posts where post_status = 'publish' and post_type = 'post'"
-
-    def self.process(dbname, user, pass, host = 'localhost')
+    def self.process(dbname, user, pass, host = 'localhost', table = "wp_posts")
       db = Sequel.mysql(dbname, :user => user, :password => pass, :host => host)
 
       FileUtils.mkdir_p "_posts"
 
+      sql = "SELECT * FROM #{table} WHERE post_status = 'publish' and post_type = 'post'"
+
       db[QUERY].each do |post|
         # Get required fields and construct Jekyll compatible name
         title = post[:post_title]
-        slug = post[:post_name]
+        #sanitize
+        slug = post[:post_name].gsub(/\//,'_')
         date = post[:post_date]
         content = post[:post_content]
 
-        name = "%02d-%02d-%02d-%s.markdown" % [date.year, date.month, date.day,
+        name = "%02d-%02d-%02d-%s.html" % [date.year, date.month, date.day,
                                                slug]
 
         # Get the relevant fields as a hash, delete empty fields and convert
